@@ -1,0 +1,59 @@
+setwd("C:\\Users\\HOME\\Desktop")
+
+data<-read.csv("data.csv")
+
+head(data)
+
+
+library(e1071)  # SVM 모델을 구현하기 위한 패키지
+library(ROSE)   # 데이터를 사용하기 위한 패키지 
+library(caret)
+str(data)
+data$Class
+
+data$Class<-as.factor(as.character(data$Class))
+str(data)
+table(data$Class)
+
+# 한 쪽 데이터만 학습시킨 후 모형이 잘 예측했는지 확인하기 위해 TRUE, FALSE로 변경 
+# True, False 로 변경해주지 않으면 모형 적용 후 confusionmatrix를 확인할 때 행, 열의 이름이 달라 에러 발생
+data$cls[data$Class=="0"] = "TRUE" 
+data$cls[data$Class!="0"] = "FALSE"
+
+# TRUE와 FALSE인 데이터 나눔 
+data_True<-subset(data,cls=="TRUE")
+data_False<-subset(data,cls=="FALSE")
+
+str(data_True)
+
+# train/test data split
+inTrain<-createDataPartition(1:nrow(data_True),p=0.7,list=FALSE)
+
+# train 데이터 생성 
+train_x<-data_True[inTrain,c(1:20,22)]
+train_y<-data_True[inTrain,23]
+str(train_x);
+str(train_y)
+
+# test 데이터 생성 
+test<-rbind(data_True[-inTrain,],data_False)
+test_x <-test[,c(1:20,22)]
+test_y <-test[,23]
+
+
+# svm
+svm.model<-svm(train_x,y=NULL,
+               type='one-classification',
+               nu=0.10,
+               scale=TRUE,
+               kernel="radial")  # 방사 kernel 함수를 이용하여 적용 
+
+svm.predtrain<-predict(svm.model,train_x)
+svm.predtest<-predict(svm.model,test_x)
+
+
+
+confTrain<-table(Predicted=svm.predtrain,Reference=train_y)
+confTest<-table(Predicted=svm.predtest,Reference=test_y )
+
+confusionMatrix(confTest,positive='TRUE')
